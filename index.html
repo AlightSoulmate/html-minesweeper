@@ -6,7 +6,8 @@
     <title>Minesweeper</title>
     <style>
       :root {
-        --small-border: 1.5px solid #474545;
+        --small-border: 1px solid #4d4943;
+        --board-border: 2px solid #4d4943;
       }
 
       * {
@@ -44,20 +45,22 @@
 
       .game-shell {
         --board-width: 360px;
-        width: min(92vw, calc(var(--board-width) + 34px));
-        padding: 14px;
+        width: max-content;
+        max-width: 92vw;
+        padding: 12px 14px 14px;
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 10px;
         align-items: center;
-        background: #d7d1c7;
-        border: 1.5px solid #b5ada0;
+        background: #ded9d1;
+        border: 1.5px solid #b8b0a5;
         border-radius: 8px;
       }
 
       .status-bar {
-        width: min(100%, calc(var(--board-width) + 3px));
-        min-width: 0;
+        width: max-content;
+        max-width: 100%;
+        min-width: min(var(--board-width), calc(92vw - 37px));
         display: flex;
         flex-direction: column;
         gap: 8px;
@@ -68,14 +71,41 @@
         width: 100%;
         display: flex;
         align-items: center;
-        justify-content: center;
-        /* justify-content: space-between; */
         gap: 8px 10px;
         flex-wrap: wrap;
       }
 
+      .settings-row {
+        width: max-content;
+        max-width: 100%;
+        flex-wrap: nowrap;
+        justify-content: center;
+        gap: 8px 18px;
+      }
+
+      .game-status-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+        justify-content: normal;
+        gap: 10px;
+      }
+
+      .game-status-row .status-item:first-child {
+        justify-self: start;
+      }
+
+      .game-status-row .status-item:nth-child(2) {
+        grid-column: 3;
+        justify-self: end;
+      }
+
+      .game-status-row .restart-btn {
+        grid-column: 2;
+        grid-row: 1;
+      }
+
       .status-item {
-        height: 32px;
+        height: 30px;
         display: flex;
         align-items: center;
         gap: 4px;
@@ -83,35 +113,35 @@
       }
 
       .status-label {
-        font-size: 14px;
+        font-size: 13px;
         color: #333;
       }
 
       .status-value {
         min-width: 36px;
-        font-size: 17px;
+        font-size: 16px;
         font-weight: 700;
         color: #222;
         font-variant-numeric: tabular-nums;
       }
 
       .toolbar-field {
-        height: 32px;
+        height: 30px;
         display: flex;
         align-items: center;
         gap: 5px;
-        font-size: 14px;
+        font-size: 13px;
         color: #333;
       }
 
       .toolbar-field input {
         width: 54px;
-        height: 30px;
+        height: 28px;
         padding: 0 6px;
         border: 1px solid #8f887e;
         border-radius: 4px;
         background: #f8f7f4;
-        font-size: 14px;
+        font-size: 15px;
         color: #222;
       }
 
@@ -122,13 +152,13 @@
 
       .restart-btn,
       .confirm-btn {
-        height: 32px;
+        height: 30px;
         padding: 0 10px;
         border: 1px solid #4f4a43;
         border-radius: 4px;
         background: #eee9df;
         color: #222;
-        font-size: 14px;
+        font-size: 13px;
         cursor: pointer;
       }
 
@@ -150,12 +180,12 @@
         max-width: 75vw;
         max-height: 75vh;
         overflow: auto;
-        border: var(--small-border);
-        background: rgb(198, 194, 187);
+        border: var(--board-border);
+        background: #c2beb6;
       }
 
       .main {
-        background-color: rgb(198, 194, 187);
+        background-color: #c2beb6;
         display: flex;
         flex-direction: column;
       }
@@ -296,6 +326,11 @@
         return Math.min(MAX_SIZE, Math.max(MIN_SIZE, value));
       };
 
+      const limitMineCount = (value) => {
+        const mineCount = Number.isFinite(value) ? value : 0;
+        return Math.min(ROW * COLUMN - 1, Math.max(0, mineCount));
+      };
+
       const createBoard = () => {
         stopTimer();
         setTitle("Mini Minesweeper");
@@ -318,6 +353,7 @@
           }
         }
         const grids = document.querySelectorAll(".main > div > div")
+        resetGridData(grids);
         const remain_mines_status = document.querySelector(
           ".status-value.mines-left",
         );
@@ -326,7 +362,8 @@
         return grids
       };
 
-      const setMines = (grids) => {
+      // init grid status
+      const resetGridData = (grids) => {
         grids.forEach((grid, index) => {
           grid.dataset.isMine = "false";
           grid.dataset.isClicked = "false";
@@ -336,13 +373,27 @@
           grid.dataset.row = Math.floor(index / COLUMN)
           grid.dataset.column = index % COLUMN
         });
-        for (let i = 0; i < MINE_COUNT; i++) {
-          let num = 0;
-          do {
-            num = Math.floor(Math.random() * grids.length);
-          } while (grids[num].dataset.isMine === "true");
-          grids[num].dataset.isMine = "true";
+      };
+
+      // Fisher-Yates shuffle
+      const shuffle = (items) => {
+        for (let i = items.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [items[i], items[j]] = [items[j], items[i]];
         }
+        return items;
+      };
+
+      const placeMines = (grids, firstClickedGrid) => {
+        // new arr
+        const candidate_grids = Array.from(grids).filter((grid) => grid !== firstClickedGrid);
+        const mine_count = Math.min(MINE_COUNT, candidate_grids.length);
+
+        shuffle(candidate_grids)
+          .slice(0, mine_count)
+          .forEach((grid) => {
+            grid.dataset.isMine = "true";
+          });
       };
 
       const setTitle = (text, color = "black") => {
@@ -464,13 +515,18 @@
         input_row.max = MAX_SIZE;
         input_column.min = MIN_SIZE;
         input_column.max = MAX_SIZE;
-        restart_btn.innerHTML = `${RESTART_SVG}<span>Restart</span>`;
+        input_mines.min = 0;
+        input_mines.max = ROW * COLUMN - 1;
+        input_mines.value = MINE_COUNT;
+        restart_btn.innerHTML = `${RESTART_SVG}`;
+        // restart_btn.innerHTML = `${RESTART_SVG}<span>Restart</span>`;
 
         let grids = createBoard();
         const refreshBoard = () => {
           ROW = limitSize(Number(input_row.value));
           COLUMN = limitSize(Number(input_column.value));
-          MINE_COUNT = Number(input_mines.value);
+          input_mines.max = ROW * COLUMN - 1;
+          MINE_COUNT = limitMineCount(Number(input_mines.value));
           input_row.value = ROW;
           input_column.value = COLUMN;
           input_mines.value = MINE_COUNT
@@ -504,7 +560,7 @@
           if (main.dataset.isClicked === "false") {
             startTimer();
             main.dataset.isClicked = "true";
-            setMines(grids)
+            placeMines(grids, grid)
           }
           if (grid.dataset.isMine === "true") {
             terminate(main, grids, grid);
