@@ -59,8 +59,17 @@
         width: min(100%, calc(var(--board-width) + 3px));
         min-width: 0;
         display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .settings-row,
+      .game-status-row {
+        width: 100%;
+        display: flex;
         align-items: center;
-        justify-content: space-between;
+        justify-content: center;
+        /* justify-content: space-between; */
         gap: 8px 10px;
         flex-wrap: wrap;
       }
@@ -206,47 +215,51 @@
       <header class="header">Mini Minesweeper</header>
       <div class="game-shell">
         <div class="status-bar">
-          <label class="toolbar-field" for="rowInput">
-            Rows:
-            <input
-              id="rowInput"
-              class="input-row"
-              type="number"
-              value="15"
-            />
-          </label>
-          <label class="toolbar-field" for="columnInput">
-            Columns:
-            <input
-              id="columnInput"
-              class="input-column"
-              type="number"
-              value="18"
-            />
-          </label>
-          <label class="toolbar-field" for="minesInput">
-            Mines:
-            <input
-              id="minesInput"
-              class="input-mines"
-              type="number"
-              value="18"
-            />
-          </label>
-          <button class="confirm-btn">Refresh</button>
-          <div class="status-item">
-            <span class="status-label">Time:</span>
-            <span class="status-value timer"></span>
+          <div class="settings-row">
+            <label class="toolbar-field" for="rowInput">
+              Rows:
+              <input
+                id="rowInput"
+                class="input-row"
+                type="number"
+                value="15"
+              />
+            </label>
+            <label class="toolbar-field" for="columnInput">
+              Columns:
+              <input
+                id="columnInput"
+                class="input-column"
+                type="number"
+                value="18"
+              />
+            </label>
+            <label class="toolbar-field" for="minesInput">
+              Mines:
+              <input
+                id="minesInput"
+                class="input-mines"
+                type="number"
+                value="18"
+              />
+            </label>
+            <button class="confirm-btn">Refresh</button>
           </div>
-          <div class="status-item">
-            <span class="status-label">Remaining Mines:</span>
-            <span class="status-value mines-left"></span>
+          <div class="game-status-row">
+            <div class="status-item">
+              <span class="status-label">Time:</span>
+              <span class="status-value timer"></span>
+            </div>
+            <div class="status-item">
+              <span class="status-label">Remaining Mines:</span>
+              <span class="status-value mines-left"></span>
+            </div>
+            <button
+              class="restart-btn"
+              aria-label="Restart"
+              title="Restart"
+            ></button>
           </div>
-          <button
-            class="restart-btn"
-            aria-label="Restart"
-            title="Restart"
-          ></button>
         </div>
         <div class="board-wrap">
           <div class="main"></div>
