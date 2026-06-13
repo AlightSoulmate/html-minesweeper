@@ -296,7 +296,7 @@
           </div>
           <div class="game-status-row">
             <div class="status-item">
-              <span class="status-label">Time/s:</span>
+              <span class="status-label">Time:</span>
               <span class="status-value timer"></span>
             </div>
             <div class="status-item">
@@ -317,15 +317,9 @@
     </div>
 
     <script>
-      let ROW = 15;
-      let COLUMN = 18;
-      let CELL_SIZE = 24;
-      let MINE_COUNT = 35;
-      let MINE_PERCENTAGE = 0;
-      let MIN_SIZE = 10;
-      let MAX_SIZE = 50;
-      let TIMER = 0;
-      let TIMERID = null;
+      const MIN_SIZE = 10;
+      const MAX_SIZE = 50;
+      const CELL_SIZE = 24;
       const MINE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24">
         <path d="M0 0h24v24H0z" fill="none" />
         <path fill="#000" d="M23 13v-2h-3.07a8 8 0 0 0-1.62-3.9l2.19-2.17l-1.43-1.43l-2.17 2.19A8 8 0 0 0 13 4.07V1h-2v3.07c-1.42.18-2.77.74-3.9 1.62L4.93 3.5L3.5 4.93L5.69 7.1A8 8 0 0 0 4.07 11H1v2h3.07c.18 1.42.74 2.77 1.62 3.9L3.5 19.07l1.43 1.43l2.17-2.19c1.13.88 2.48 1.44 3.9 1.62V23h2v-3.07c1.42-.18 2.77-.74 3.9-1.62l2.17 2.19l1.43-1.43l-2.19-2.17a8 8 0 0 0 1.62-3.9zM12 8a4 4 0 0 0-4 4H6a6 6 0 0 1 6-6z" />
@@ -340,14 +334,20 @@
         <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.252 4v5H9M5.07 8a8 8 0 1 1-.818 6" />
       </svg>
       `;
+      let rowCount = 15;
+      let columnCount = 18;
+      let mineCount = 35;
+      let minePercentage = 0;
+      let timer = 0;
+      let timerId = null;
 
       const limitSize = (value) => {
         return Math.min(MAX_SIZE, Math.max(MIN_SIZE, value));
       };
 
       const limitMineCount = (value) => {
-        const mineCount = Number.isFinite(value) ? value : 0;
-        return Math.min(ROW * COLUMN - 1, Math.max(0, mineCount));
+        const nextMineCount = Number.isFinite(value) ? value : 0;
+        return Math.min(rowCount * columnCount - 1, Math.max(0, nextMineCount));
       };
 
       const createBoard = () => {
@@ -355,33 +355,33 @@
         setTitle("Mini Minesweeper");
 
         const main = document.querySelector(".main");
-        main.style.width = `${COLUMN * CELL_SIZE}px`;
-        main.style.height = `${ROW * CELL_SIZE}px`;
+        main.style.width = `${columnCount * CELL_SIZE}px`;
+        main.style.height = `${rowCount * CELL_SIZE}px`;
         main.innerHTML = "";
         main.dataset.isClicked = "false";
-        const game_shell = document.querySelector(".game-shell");
-        game_shell.style.setProperty(
+        const gameShell = document.querySelector(".game-shell");
+        gameShell.style.setProperty(
           "--board-width",
-          `${COLUMN * CELL_SIZE}px`,
+          `${columnCount * CELL_SIZE}px`,
         );
         initTimer();
 
-        for (let i = 0; i < ROW; i++) {
+        for (let i = 0; i < rowCount; i++) {
           const submain = document.createElement("div");
           main.appendChild(submain);
-          for (let j = 0; j < COLUMN; j++) {
+          for (let j = 0; j < columnCount; j++) {
             const cell = document.createElement("div");
             submain.appendChild(cell);
           }
         }
         const grids = document.querySelectorAll(".main > div > div");
         resetGridData(grids);
-        const remain_mines_status = document.querySelector(
+        const flagsLeftStatus = document.querySelector(
           ".status-value.mines-left",
         );
-        remain_mines_status.innerHTML = MINE_COUNT;
-        MINE_PERCENTAGE =
-          Math.round((MINE_COUNT * 10000) / (ROW * COLUMN)) / 100;
+        flagsLeftStatus.innerHTML = mineCount;
+        minePercentage =
+          Math.round((mineCount * 10000) / (rowCount * columnCount)) / 100;
         return grids;
       };
 
@@ -393,8 +393,8 @@
           grid.dataset.isFlagged = "false";
           grid.dataset.aroundMines = "0";
           grid.dataset.index = index;
-          grid.dataset.row = Math.floor(index / COLUMN);
-          grid.dataset.column = index % COLUMN;
+          grid.dataset.row = Math.floor(index / columnCount);
+          grid.dataset.column = index % columnCount;
         });
       };
 
@@ -409,13 +409,13 @@
 
       const placeMines = (grids, firstClickedGrid) => {
         // new arr
-        const candidate_grids = Array.from(grids).filter(
+        const candidateGrids = Array.from(grids).filter(
           (grid) => grid !== firstClickedGrid,
         );
-        const mine_count = Math.min(MINE_COUNT, candidate_grids.length);
+        const nextMineCount = Math.min(mineCount, candidateGrids.length);
 
-        shuffle(candidate_grids)
-          .slice(0, mine_count)
+        shuffle(candidateGrids)
+          .slice(0, nextMineCount)
           .forEach((grid) => {
             grid.dataset.isMine = "true";
           });
@@ -428,24 +428,24 @@
       };
 
       const initTimer = () => {
-        let time_status = document.querySelector(".status-value.timer");
-        time_status.innerHTML = "000";
-        TIMER = 0;
-        return time_status;
+        let timerStatus = document.querySelector(".status-value.timer");
+        timerStatus.innerHTML = "000";
+        timer = 0;
+        return timerStatus;
       };
 
       const startTimer = () => {
-        let time_status = initTimer();
-        clearInterval(TIMERID);
-        TIMERID = setInterval(() => {
-          TIMER++;
-          time_status.innerHTML = String(TIMER).padStart(3, "0");
+        let timerStatus = initTimer();
+        clearInterval(timerId);
+        timerId = setInterval(() => {
+          timer++;
+          timerStatus.innerHTML = String(timer).padStart(3, "0");
         }, 1000);
       };
 
       const stopTimer = () => {
-        clearInterval(TIMERID);
-        TIMERID = null;
+        clearInterval(timerId);
+        timerId = null;
       };
 
       const countAroundMinesNumber = (grids, grid) => {
@@ -458,8 +458,9 @@
             if (i === 0 && j === 0) continue;
             const ni = row + i,
               nj = column + j;
-            if (ni < 0 || ni >= ROW || nj < 0 || nj >= COLUMN) continue;
-            if (grids[ni * COLUMN + nj].dataset.isMine === "true") {
+            if (ni < 0 || ni >= rowCount || nj < 0 || nj >= columnCount)
+              continue;
+            if (grids[ni * columnCount + nj].dataset.isMine === "true") {
               aroundMines++;
             }
           }
@@ -467,7 +468,7 @@
         grid.dataset.aroundMines = String(aroundMines);
       };
 
-      const BFS = (grids, grid) => {
+      const revealEmptyCells = (grids, grid) => {
         const queue = [grid];
         let head = 0;
         while (head < queue.length) {
@@ -479,8 +480,9 @@
               if ((i | j) === 0) continue;
               const ni = row + i,
                 nj = column + j;
-              if (ni < 0 || ni >= ROW || nj < 0 || nj >= COLUMN) continue;
-              const nxt = grids[ni * COLUMN + nj];
+              if (ni < 0 || ni >= rowCount || nj < 0 || nj >= columnCount)
+                continue;
+              const nxt = grids[ni * columnCount + nj];
               if (
                 nxt.dataset.isMine === "true" ||
                 nxt.dataset.isClicked === "true" ||
@@ -502,7 +504,7 @@
         }
       };
 
-      const postTerminate = (main, grids, grid) => {
+      const postTerminate = (grids, grid) => {
         setTitle("Game Over!", "red");
         grids.forEach((cell) => {
           if (cell.dataset.isMine === "true") {
@@ -538,50 +540,49 @@
           }
           cell.dataset.isClicked = "true";
         });
-      }
+      };
 
       const init = () => {
         const main = document.querySelector(".main");
-        const input_row = document.querySelector(".input-row");
-        const input_column = document.querySelector(".input-column");
-        const input_mines = document.querySelector(".input-mines");
-        const confirm_btn = document.querySelector(".confirm-btn");
-        const remain_mines_status = document.querySelector(
+        const inputRow = document.querySelector(".input-row");
+        const inputColumn = document.querySelector(".input-column");
+        const inputMines = document.querySelector(".input-mines");
+        const confirmBtn = document.querySelector(".confirm-btn");
+        const flagsLeftStatus = document.querySelector(
           ".status-value.mines-left",
         );
-        const restart_btn = document.querySelector(".restart-btn");
+        const restartBtn = document.querySelector(".restart-btn");
 
-        input_row.min = MIN_SIZE;
-        input_row.max = MAX_SIZE;
-        input_column.min = MIN_SIZE;
-        input_column.max = MAX_SIZE;
-        input_mines.min = 0;
-        input_mines.max = ROW * COLUMN - 1;
-        input_mines.value = MINE_COUNT;
-        restart_btn.innerHTML = `${RESTART_SVG}`;
-        // restart_btn.innerHTML = `${RESTART_SVG}<span>Restart</span>`;
+        inputRow.min = MIN_SIZE;
+        inputRow.max = MAX_SIZE;
+        inputColumn.min = MIN_SIZE;
+        inputColumn.max = MAX_SIZE;
+        inputMines.min = 0;
+        inputMines.max = rowCount * columnCount - 1;
+        inputMines.value = mineCount;
+        restartBtn.innerHTML = `${RESTART_SVG}`;
 
         let grids = createBoard();
         const refreshBoard = () => {
-          ROW = limitSize(Number(input_row.value));
-          COLUMN = limitSize(Number(input_column.value));
-          input_mines.max = ROW * COLUMN - 1;
-          MINE_COUNT = limitMineCount(Number(input_mines.value));
-          input_row.value = ROW;
-          input_column.value = COLUMN;
-          input_mines.value = MINE_COUNT;
+          rowCount = limitSize(Number(inputRow.value));
+          columnCount = limitSize(Number(inputColumn.value));
+          inputMines.max = rowCount * columnCount - 1;
+          mineCount = limitMineCount(Number(inputMines.value));
+          inputRow.value = rowCount;
+          inputColumn.value = columnCount;
+          inputMines.value = mineCount;
           grids = createBoard();
         };
 
-        confirm_btn.addEventListener("click", refreshBoard);
+        confirmBtn.addEventListener("click", refreshBoard);
 
-        [input_row, input_column, input_mines].forEach((input) => {
+        [inputRow, inputColumn, inputMines].forEach((input) => {
           input.addEventListener("keydown", (e) => {
             if (e.key === "Enter") refreshBoard();
           });
         });
 
-        restart_btn.addEventListener("click", () => {
+        restartBtn.addEventListener("click", () => {
           stopTimer();
           grids = createBoard();
         });
@@ -603,7 +604,7 @@
             placeMines(grids, grid);
           }
           if (grid.dataset.isMine === "true") {
-            postTerminate(main, grids, grid);
+            postTerminate(grids, grid);
             stopTimer();
           } else {
             grid.style.background = "white";
@@ -612,10 +613,10 @@
               grid.innerHTML = grid.dataset.aroundMines;
               grid.classList.add(`count-${Number(grid.dataset.aroundMines)}`);
             } else {
-              BFS(grids, grid);
+              revealEmptyCells(grids, grid);
             }
             if (checkWin(grids)) {
-              postWin(grids)
+              postWin(grids);
               stopTimer();
             }
           }
@@ -629,13 +630,11 @@
           if (grid.dataset.isFlagged === "true") {
             grid.dataset.isFlagged = "false";
             grid.innerHTML = "";
-            remain_mines_status.innerHTML =
-              Number(remain_mines_status.innerHTML) + 1;
+            flagsLeftStatus.innerHTML = Number(flagsLeftStatus.innerHTML) + 1;
           } else if (grid.dataset.isClicked === "false") {
             grid.dataset.isFlagged = "true";
             grid.innerHTML = FLAG_SVG;
-            remain_mines_status.innerHTML =
-              Number(remain_mines_status.innerHTML) - 1;
+            flagsLeftStatus.innerHTML = Number(flagsLeftStatus.innerHTML) - 1;
           }
         });
       };
