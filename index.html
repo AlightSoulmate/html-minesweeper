@@ -57,6 +57,44 @@
         border-radius: 8px;
       }
 
+      .source-link {
+        width: min(var(--board-width), calc(92vw - 37px));
+        min-height: 34px;
+        padding: 7px 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border: 1px solid #a59d92;
+        border-radius: 6px;
+        background: #eee9df;
+        color: #25211d;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 700;
+        line-height: 1;
+        transition:
+          background-color 140ms ease,
+          border-color 140ms ease;
+      }
+
+      .source-link:hover {
+        background: #fffaf0;
+        border-color: #4f4a43;
+      }
+
+      .source-link:focus-visible {
+        outline: 2px solid rgba(34, 34, 34, 0.24);
+        outline-offset: 2px;
+      }
+
+      .source-link svg {
+        width: 18px;
+        height: 18px;
+        flex: 0 0 auto;
+        display: block;
+      }
+
       .status-bar {
         width: max-content;
         max-width: 100%;
@@ -313,6 +351,16 @@
         <div class="board-wrap">
           <div class="main"></div>
         </div>
+        <a
+          class="source-link"
+          href="https://github.com/AlightSoulmate/html-minesweeper"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="View source on GitHub"
+        >
+          <span class="github-icon" aria-hidden="true"></span>
+          <span>View on GitHub</span>
+        </a>
       </div>
     </div>
 
@@ -334,6 +382,9 @@
         <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.252 4v5H9M5.07 8a8 8 0 1 1-.818 6" />
       </svg>
       `;
+      const GITHUB_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M12 2C6.48 2 2 6.58 2 12.24c0 4.52 2.87 8.35 6.84 9.71c.5.09.68-.22.68-.49v-1.9c-2.78.62-3.37-1.22-3.37-1.22c-.46-1.18-1.11-1.5-1.11-1.5c-.91-.64.07-.62.07-.62c1 .07 1.53 1.06 1.53 1.06c.89 1.56 2.34 1.11 2.91.85c.09-.66.35-1.11.63-1.36c-2.22-.26-4.55-1.14-4.55-5.06c0-1.12.39-2.03 1.03-2.75c-.1-.26-.45-1.3.1-2.71c0 0 .84-.28 2.75 1.05A9.28 9.28 0 0 1 12 6.96c.85 0 1.71.12 2.51.34c1.91-1.33 2.75-1.05 2.75-1.05c.55 1.41.2 2.45.1 2.71c.64.72 1.03 1.63 1.03 2.75c0 3.93-2.34 4.8-4.57 5.05c.36.32.68.94.68 1.9v2.81c0 .27.18.58.69.49A10.21 10.21 0 0 0 22 12.24C22 6.58 17.52 2 12 2Z" />
+      </svg>`;
       let rowCount = 15;
       let columnCount = 18;
       let mineCount = 35;
@@ -561,6 +612,7 @@
         inputMines.max = rowCount * columnCount - 1;
         inputMines.value = mineCount;
         restartBtn.innerHTML = `${RESTART_SVG}`;
+        document.querySelector(".github-icon").innerHTML = GITHUB_SVG;
 
         let grids = createBoard();
         const refreshBoard = () => {
