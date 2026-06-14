@@ -15,11 +15,14 @@ const RESTART_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="
   <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.252 4v5H9M5.07 8a8 8 0 1 1-.818 6" />
 </svg>
 `;
-let rowCount = 15;
-let columnCount = 18;
-let mineCount = 35;
-let timer = 0;
-let timerId = null;
+const state = {
+  rows: 15,
+  columns: 18,
+  mines: 35,
+  timer: 0,
+  timerId: null,
+  hasStarted: false,
+};
 
 const limitSize = (value) => {
   return Math.min(MAX_SIZE, Math.max(MIN_SIZE, value));
@@ -27,7 +30,7 @@ const limitSize = (value) => {
 
 const limitMineCount = (value) => {
   const nextMineCount = Number.isFinite(value) ? value : 0;
-  return Math.min(rowCount * columnCount - 1, Math.max(0, nextMineCount));
+  return Math.min(state.rows * state.columns - 1, Math.max(0, nextMineCount));
 };
 
 const createBoard = () => {
@@ -44,18 +47,18 @@ const createBoard = () => {
 const resetMain = () => {
   const main = document.querySelector(".main");
   main.innerHTML = "";
-  main.style.width = `${columnCount * CELL_SIZE}px`;
-  main.style.height = `${rowCount * CELL_SIZE}px`;
-  main.dataset.isClicked = "false";
+  main.style.width = `${state.columns * CELL_SIZE}px`;
+  main.style.height = `${state.rows * CELL_SIZE}px`;
+  state.hasStarted = false;
   document
     .querySelector(".game-shell")
-    .style.setProperty("--board-width", `${columnCount * CELL_SIZE}px`);
+    .style.setProperty("--board-width", `${state.columns * CELL_SIZE}px`);
 
   // create grids
-  for (let i = 0; i < rowCount; i++) {
+  for (let i = 0; i < state.rows; i++) {
     const submain = document.createElement("div");
     main.appendChild(submain);
-    for (let j = 0; j < columnCount; j++) {
+    for (let j = 0; j < state.columns; j++) {
       const cell = document.createElement("div");
       submain.appendChild(cell);
     }
@@ -67,7 +70,7 @@ const resetFlagsLeft = () => {
   const flagsLeftStatus = document.querySelector(
     ".status-value.mines-left",
   );
-  flagsLeftStatus.innerHTML = mineCount;
+  flagsLeftStatus.innerHTML = state.mines;
 };
 
 const resetGridData = (grids) => {
@@ -77,8 +80,8 @@ const resetGridData = (grids) => {
     grid.dataset.isFlagged = "false";
     grid.dataset.aroundMines = "0";
     grid.dataset.index = index;
-    grid.dataset.row = Math.floor(index / columnCount);
-    grid.dataset.column = index % columnCount;
+    grid.dataset.row = Math.floor(index / state.columns);
+    grid.dataset.column = index % state.columns;
   });
 };
 
@@ -96,7 +99,7 @@ const placeMines = (grids, firstClickedGrid) => {
   const candidateGrids = Array.from(grids).filter(
     (grid) => grid !== firstClickedGrid,
   );
-  const nextMineCount = Math.min(mineCount, candidateGrids.length);
+  const nextMineCount = Math.min(state.mines, candidateGrids.length);
 
   shuffle(candidateGrids)
     .slice(0, nextMineCount)
@@ -114,22 +117,22 @@ const setTitle = (text, color = "black") => {
 const initTimer = () => {
   let timerStatus = document.querySelector(".status-value.timer");
   timerStatus.innerHTML = "000";
-  timer = 0;
+  state.timer = 0;
   return timerStatus;
 };
 
 const startTimer = () => {
   let timerStatus = initTimer();
-  clearInterval(timerId);
-  timerId = setInterval(() => {
-    timer++;
-    timerStatus.innerHTML = String(timer).padStart(3, "0");
+  clearInterval(state.timerId);
+  state.timerId = setInterval(() => {
+    state.timer++;
+    timerStatus.innerHTML = String(state.timer).padStart(3, "0");
   }, 1000);
 };
 
 const stopTimer = () => {
-  clearInterval(timerId);
-  timerId = null;
+  clearInterval(state.timerId);
+  state.timerId = null;
 };
 
 const countAroundMinesNumber = (grids, grid) => {
@@ -143,9 +146,9 @@ const countAroundMinesNumber = (grids, grid) => {
       if (i === 0 && j === 0) continue;
       const ni = row + i,
         nj = column + j;
-      if (ni < 0 || ni >= rowCount || nj < 0 || nj >= columnCount)
+      if (ni < 0 || ni >= state.rows || nj < 0 || nj >= state.columns)
         continue;
-      if (grids[ni * columnCount + nj].dataset.isMine === "true") {
+      if (grids[ni * state.columns + nj].dataset.isMine === "true") {
         aroundMines++;
       }
     }
@@ -167,9 +170,9 @@ const floodFill = (grids, grid) => {
         if ((i | j) === 0) continue;
         const ni = row + i,
           nj = column + j;
-        if (ni < 0 || ni >= rowCount || nj < 0 || nj >= columnCount)
+        if (ni < 0 || ni >= state.rows || nj < 0 || nj >= state.columns)
           continue;
-        const nxt = grids[ni * columnCount + nj];
+        const nxt = grids[ni * state.columns + nj];
         if (
           nxt.dataset.isMine === "true" ||
           nxt.dataset.isClicked === "true" ||
@@ -245,19 +248,21 @@ const init = () => {
   inputColumn.min = MIN_SIZE;
   inputColumn.max = MAX_SIZE;
   inputMines.min = 0;
-  inputMines.max = rowCount * columnCount - 1;
-  inputMines.value = mineCount;
+  inputRow.value = state.rows;
+  inputColumn.value = state.columns;
+  inputMines.max = state.rows * state.columns - 1;
+  inputMines.value = state.mines;
   restartBtn.innerHTML = `${RESTART_SVG}`;
 
   let grids = createBoard();
   const refreshBoard = () => {
-    rowCount = limitSize(Number(inputRow.value));
-    columnCount = limitSize(Number(inputColumn.value));
-    inputMines.max = rowCount * columnCount - 1;
-    mineCount = limitMineCount(Number(inputMines.value));
-    inputRow.value = rowCount;
-    inputColumn.value = columnCount;
-    inputMines.value = mineCount;
+    state.rows = limitSize(Number(inputRow.value));
+    state.columns = limitSize(Number(inputColumn.value));
+    inputMines.max = state.rows * state.columns - 1;
+    state.mines = limitMineCount(Number(inputMines.value));
+    inputRow.value = state.rows;
+    inputColumn.value = state.columns;
+    inputMines.value = state.mines;
     grids = createBoard();
   };
 
@@ -285,9 +290,9 @@ const init = () => {
 
     grid.dataset.isClicked = "true";
     // start game by first click, placing mines after first click
-    if (main.dataset.isClicked === "false") {
+    if (!state.hasStarted) {
       startTimer();
-      main.dataset.isClicked = "true";
+      state.hasStarted = true;
       placeMines(grids, grid);
     }
     // terminate by touching a mine
