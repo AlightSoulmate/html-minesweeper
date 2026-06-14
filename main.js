@@ -24,6 +24,19 @@ const state = {
   hasStarted: false,
 };
 
+const elements = {
+  title: document.querySelector(".header"),
+  gameShell: document.querySelector(".game-shell"),
+  main: document.querySelector(".main"),
+  inputRow: document.querySelector(".input-row"),
+  inputColumn: document.querySelector(".input-column"),
+  inputMines: document.querySelector(".input-mines"),
+  confirmBtn: document.querySelector(".confirm-btn"),
+  restartBtn: document.querySelector(".restart-btn"),
+  timer: document.querySelector(".timer"),
+  minesLeft: document.querySelector(".mines-left"),
+};
+
 const limitSize = (value) => {
   return Math.min(MAX_SIZE, Math.max(MIN_SIZE, value));
 };
@@ -45,32 +58,29 @@ const createBoard = () => {
 };
 
 const resetMain = () => {
-  const main = document.querySelector(".main");
-  main.innerHTML = "";
-  main.style.width = `${state.columns * CELL_SIZE}px`;
-  main.style.height = `${state.rows * CELL_SIZE}px`;
+  elements.main.innerHTML = "";
+  elements.main.style.width = `${state.columns * CELL_SIZE}px`;
+  elements.main.style.height = `${state.rows * CELL_SIZE}px`;
   state.hasStarted = false;
-  document
-    .querySelector(".game-shell")
-    .style.setProperty("--board-width", `${state.columns * CELL_SIZE}px`);
+  elements.gameShell.style.setProperty(
+    "--board-width",
+    `${state.columns * CELL_SIZE}px`,
+  );
 
   // create grids
   for (let i = 0; i < state.rows; i++) {
     const submain = document.createElement("div");
-    main.appendChild(submain);
+    elements.main.appendChild(submain);
     for (let j = 0; j < state.columns; j++) {
       const cell = document.createElement("div");
       submain.appendChild(cell);
     }
   }
-  return document.querySelectorAll(".main > div > div");
+  return elements.main.querySelectorAll(":scope > div > div");
 };
 
 const resetFlagsLeft = () => {
-  const flagsLeftStatus = document.querySelector(
-    ".status-value.mines-left",
-  );
-  flagsLeftStatus.innerHTML = state.mines;
+  elements.minesLeft.innerHTML = state.mines;
 };
 
 const resetGridData = (grids) => {
@@ -109,24 +119,21 @@ const placeMines = (grids, firstClickedGrid) => {
 };
 
 const setTitle = (text, color = "black") => {
-  const title = document.querySelector(".header");
-  title.textContent = text;
-  title.style.color = color;
+  elements.title.textContent = text;
+  elements.title.style.color = color;
 };
 
 const initTimer = () => {
-  let timerStatus = document.querySelector(".status-value.timer");
-  timerStatus.innerHTML = "000";
+  elements.timer.innerHTML = "000";
   state.timer = 0;
-  return timerStatus;
 };
 
 const startTimer = () => {
-  let timerStatus = initTimer();
+  initTimer();
   clearInterval(state.timerId);
   state.timerId = setInterval(() => {
     state.timer++;
-    timerStatus.innerHTML = String(state.timer).padStart(3, "0");
+    elements.timer.innerHTML = String(state.timer).padStart(3, "0");
   }, 1000);
 };
 
@@ -235,53 +242,47 @@ const postWin = (grids) => {
 };
 
 const init = () => {
-  const main = document.querySelector(".main");
-  const inputRow = document.querySelector(".input-row");
-  const inputColumn = document.querySelector(".input-column");
-  const inputMines = document.querySelector(".input-mines");
-  const confirmBtn = document.querySelector(".confirm-btn");
-  const flagsLeftStatus = document.querySelector(".mines-left");
-  const restartBtn = document.querySelector(".restart-btn");
-
-  inputRow.min = MIN_SIZE;
-  inputRow.max = MAX_SIZE;
-  inputColumn.min = MIN_SIZE;
-  inputColumn.max = MAX_SIZE;
-  inputMines.min = 0;
-  inputRow.value = state.rows;
-  inputColumn.value = state.columns;
-  inputMines.max = state.rows * state.columns - 1;
-  inputMines.value = state.mines;
-  restartBtn.innerHTML = `${RESTART_SVG}`;
+  elements.inputRow.min = MIN_SIZE;
+  elements.inputRow.max = MAX_SIZE;
+  elements.inputColumn.min = MIN_SIZE;
+  elements.inputColumn.max = MAX_SIZE;
+  elements.inputMines.min = 0;
+  elements.inputRow.value = state.rows;
+  elements.inputColumn.value = state.columns;
+  elements.inputMines.max = state.rows * state.columns - 1;
+  elements.inputMines.value = state.mines;
+  elements.restartBtn.innerHTML = `${RESTART_SVG}`;
 
   let grids = createBoard();
   const refreshBoard = () => {
-    state.rows = limitSize(Number(inputRow.value));
-    state.columns = limitSize(Number(inputColumn.value));
-    inputMines.max = state.rows * state.columns - 1;
-    state.mines = limitMineCount(Number(inputMines.value));
-    inputRow.value = state.rows;
-    inputColumn.value = state.columns;
-    inputMines.value = state.mines;
+    state.rows = limitSize(Number(elements.inputRow.value));
+    state.columns = limitSize(Number(elements.inputColumn.value));
+    elements.inputMines.max = state.rows * state.columns - 1;
+    state.mines = limitMineCount(Number(elements.inputMines.value));
+    elements.inputRow.value = state.rows;
+    elements.inputColumn.value = state.columns;
+    elements.inputMines.value = state.mines;
     grids = createBoard();
   };
 
-  confirmBtn.addEventListener("click", refreshBoard);
+  elements.confirmBtn.addEventListener("click", refreshBoard);
 
-  [inputRow, inputColumn, inputMines].forEach((input) => {
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") refreshBoard();
-    });
-  });
+  [elements.inputRow, elements.inputColumn, elements.inputMines].forEach(
+    (input) => {
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") refreshBoard();
+      });
+    },
+  );
 
-  restartBtn.addEventListener("click", () => {
+  elements.restartBtn.addEventListener("click", () => {
     stopTimer();
     grids = createBoard();
   });
 
-  main.addEventListener("click", (e) => {
+  elements.main.addEventListener("click", (e) => {
     const grid = e.target.closest(".main > div > div");
-    if (!grid || !main.contains(grid)) return;
+    if (!grid || !elements.main.contains(grid)) return;
     if (
       grid.dataset.isClicked === "true" ||
       grid.dataset.isFlagged === "true"
@@ -318,10 +319,10 @@ const init = () => {
     }
   });
 
-  main.addEventListener("contextmenu", (e) => {
+  elements.main.addEventListener("contextmenu", (e) => {
     e.preventDefault();
     const grid = e.target.closest(".main > div > div");
-    if (!grid || !main.contains(grid)) return;
+    if (!grid || !elements.main.contains(grid)) return;
 
     // clicked grid can not be flagged
     if (grid.dataset.isClicked === "true") return;
@@ -329,12 +330,12 @@ const init = () => {
     if (grid.dataset.isFlagged === "true") {
       grid.dataset.isFlagged = "false";
       grid.innerHTML = "";
-      flagsLeftStatus.innerHTML = Number(flagsLeftStatus.innerHTML) + 1;
+      elements.minesLeft.innerHTML = Number(elements.minesLeft.innerHTML) + 1;
       // flag unclicked grid
     } else if (grid.dataset.isClicked === "false") {
       grid.dataset.isFlagged = "true";
       grid.innerHTML = FLAG_SVG;
-      flagsLeftStatus.innerHTML = Number(flagsLeftStatus.innerHTML) - 1;
+      elements.minesLeft.innerHTML = Number(elements.minesLeft.innerHTML) - 1;
     }
   });
 };
